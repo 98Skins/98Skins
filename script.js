@@ -1,0 +1,779 @@
+// ==================== DŹWIĘKI I EFEKTY ====================
+const sfx = {
+    open: new Audio("https://casehug.com/ch-static/audio/case-opening/open-case-button.wav"),
+    tick: new Audio("https://casehug.com/ch-static/audio/case-opening/open-case-tick.wav"),
+    end: new Audio("https://casehug.com/ch-static/audio/case-opening/open-case-end.wav"),
+    best: new Audio("https://casehug.com/ch-static/audio/case-opening/case-open-best-drop.wav"),
+    battleWin: new Audio("https://casehug.com/ch-static/audio/case-battle/win_game.wav"),
+    battleLose: new Audio("https://casehug.com/ch-static/audio/case-battle/fail_game.wav"),
+    battleDraw: new Audio("https://casehug.com/ch-static/audio/case-battle/draw_game.wav")
+};
+
+sfx.tick.volume = 0.3;
+
+function playSound(sound, volume = 1) {
+    try {
+        const soundClone = sound.cloneNode();
+        soundClone.volume = volume;
+        soundClone.play().catch(e => console.log('Nie można odtworzyć dźwięku:', e));
+    } catch(e) {
+        console.log('Błąd dźwięku:', e);
+    }
+}
+
+// Konfetti
+const canvas = document.getElementById('confettiCanvas');
+const ctx = canvas.getContext('2d');
+let animationId = null;
+let particles = [];
+
+function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+class Particle {
+    constructor() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height - canvas.height;
+        this.size = Math.random() * 8 + 4;
+        this.speedY = Math.random() * 5 + 3;
+        this.speedX = Math.random() * 2 - 1;
+        this.color = `hsl(${Math.random() * 360}, 100%, 50%)`;
+    }
+    update() {
+        this.y += this.speedY;
+        this.x += this.speedX;
+        if (this.y > canvas.height) {
+            this.y = -this.size;
+            this.x = Math.random() * canvas.width;
+        }
+    }
+    draw() {
+        ctx.fillStyle = this.color;
+        ctx.fillRect(this.x, this.y, this.size, this.size);
+    }
+}
+
+function startConfetti() {
+    canvas.style.display = 'block';
+    particles = [];
+    for (let i = 0; i < 100; i++) {
+        particles.push(new Particle());
+    }
+    
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        particles.forEach(p => {
+            p.update();
+            p.draw();
+        });
+        animationId = requestAnimationFrame(animate);
+    }
+    animate();
+}
+
+function stopConfetti() {
+    if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+    }
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    canvas.style.display = 'none';
+}
+
+// ==================== GŁÓWNE SKRZYNKI ====================
+let balance = parseFloat(localStorage.getItem('balance')) || 50.00;
+let inventory = JSON.parse(localStorage.getItem('inventory')) || [];
+let currentCase = 'wood';
+let isDemoMode = false;
+let isSpinning = false;
+
+let lastDailyTime = localStorage.getItem('lastDailyTime') ? parseInt(localStorage.getItem('lastDailyTime')) : 0;
+let lossStreak = parseInt(localStorage.getItem('lossStreak')) || 0;
+
+// DEFINICJE WSZYSTKICH SKRZYŃ
+const skins = {
+    wood: [
+        { name: "PP-Bizon | Facility Sketch", price: 0.50, chance: 33.3, img: "https://cdn.casehug.com/730/ab/ab94c6ed7fd6b5b1162cf71c90ddba35.png?width=640&quality=85", color: "#4b69ff", type: "skin" },
+        { name: "SG 553 | Army Sheen", price: 0.55, chance: 33.3, img: "https://cdn.casehug.com/730/cb/cb56a60cdd4b1edc0356fd29df09421f.png?width=640&quality=85", color: "#4b69ff", type: "skin" },
+        { name: "G3SG1 | Polar Camo", price: 0.60, chance: 33.4, img: "https://cdn.casehug.com/730/0e/0ef11dab84493728140811a904375cac.png?width=640&quality=85", color: "#8847ff", type: "skin" }
+    ],
+    gameon: [
+        { name: "USP-S | Printstream", price: 350.00, chance: 0.5, img: "https://cdn.casehug.com/730/ad/ad900a08828281d511691b19efbcdb48.png?width=640&quality=85", color: "#eb4b4b", type: "skin" },
+        { name: "AK-47 | Nouveau Rouge", price: 145.00, chance: 1.5, img: "https://cdn.casehug.com/730/7a/7a827eec318301f261401a1e5422912f.png?width=640&quality=85", color: "#d32ee6", type: "skin" },
+        { name: "Desert Eagle | Trigger Discipline", price: 28.50, chance: 5.0, img: "https://cdn.casehug.com/730/ea/ea3b60346b586e1b4dd17125247b3ee4.png?width=640&quality=85", color: "#8847ff", type: "skin" },
+        { name: "Dual Berettas | BorDeux", price: 0.50, chance: 93.0, img: "https://cdn.casehug.com/730/3b/3bea254803a0ea95b9ce2a020368d039.png?width=640&quality=85", color: "#4b69ff", type: "skin" }
+    ],
+    sticker: [
+        { name: "Sticker | Too Late", price: 0.20, chance: 60.0, img: "https://cdn.casehug.com/730/35/35e5e606715887d6bed731af2dbcb38e.png?width=640&quality=85", color: "#aaaaaa", type: "sticker" },
+        { name: "Sticker | Cyber Chicken", price: 2.92, chance: 25.0, img: "https://cdn.casehug.com/730/88/884a218dbbe6b8aa4c4d1d7e856da486.png?width=640&quality=85", color: "#ffaa00", type: "sticker" },
+        { name: "Sticker | Nice Clutch", price: 5.88, chance: 10.0, img: "https://cdn.casehug.com/730/5d/5d982eb2f88352484e70379c616f076c.png?width=640&quality=85", color: "#00aaff", type: "sticker" },
+        { name: "Sticker | Liquid Fire", price: 196.64, chance: 5.0, img: "https://cdn.casehug.com/730/8b/8b8554a043a377138efa19425de49044.png?width=640&quality=85", color: "#ff4b4b", type: "sticker" }
+    ],
+    lore: [
+        { name: "AK-47 | Asiimov", price: 253.28, chance: 94.298, img: "https://cdn.casehug.com/730/3d/3d6b4ac1c1dd329b8f735c63a2d72cb6.png?width=640&quality=85", color: "#ffaa00", type: "skin" },
+        { name: "Talon Knife | Tiger Tooth", price: 3212.28, chance: 4.431, img: "https://cdn.casehug.com/730/3d/3d53ce7fc41bc52eec62fa07631b2768.png?width=640&quality=85", color: "#ffaa00", type: "skin" },
+        { name: "M4A4 | Howl", price: 30772.48, chance: 0.784, img: "https://cdn.casehug.com/730/c2/c29d1cf81c9514cab9f05063e9cce2a4.png?width=640&quality=85", color: "#eb4b4b", type: "skin" },
+        { name: "AWP | Dragon Lore", price: 39884.88, chance: 0.487, img: "https://cdn.casehug.com/730/af/afc9bcb65d41de58f6865b29faf1e396.png?width=640&quality=85", color: "#ff8800", type: "skin" }
+    ],
+    farm: [
+        { name: "★ Stiletto Knife | Ultraviolet", price: 1058.56, chance: 0.039, img: "https://cdn.casehug.com/730/0c/0cef6d89611896cb3d1811443e46b802.png?width=640&quality=85", color: "#eb4b4b", type: "knife" },
+        { name: "★ Bowie Knife | Freehand", price: 599.28, chance: 0.455, img: "https://cdn.casehug.com/730/be/be3c68f46bc80a0041c038c1cb30058b.png?width=640&quality=85", color: "#eb4b4b", type: "knife" },
+        { name: "★ Shadow Daggers | Ultraviolet", price: 342.12, chance: 1.878, img: "https://cdn.casehug.com/730/c9/c9652f2dc5a3b24b64f25c1c9a8973c8.png?width=640&quality=85", color: "#d32ee6", type: "knife" },
+        { name: "UMP-45 | Primal Saber", price: 73.10, chance: 4.289, img: "https://cdn.casehug.com/730/68/680afe295bbbe8e3766dc947278be79f.png?width=640&quality=85", color: "#8847ff", type: "skin" },
+        { name: "M4A4 | Etch Lord", price: 7.04, chance: 3.674, img: "https://cdn.casehug.com/730/4b/4be1b2058368ebe24bc73c07399cb5b6.png?width=640&quality=85", color: "#8847ff", type: "skin" },
+        { name: "Nova | Army Sheen", price: 5.64, chance: 6.351, img: "https://cdn.casehug.com/730/f7/f7308b3c3884a9680ded24951ee71b13.png?width=640&quality=85", color: "#4b69ff", type: "skin" },
+        { name: "P250 | X-Ray", price: 2.92, chance: 83.314, img: "https://cdn.casehug.com/730/d0/d0cc8f15a87da999940583d7eff64169.png?width=640&quality=85", color: "#4b69ff", type: "skin" }
+    ],
+    toxic: [
+        { name: "★ M9 Bayonet | Autotronic", price: 2812.16, chance: 0.01, img: "https://cdn.casehug.com/730/b6/b68875422ef7fd3aeb9cb7cfd0870e84.png?width=640&quality=85", color: "#eb4b4b", type: "knife" },
+        { name: "AK-47 | Ice Coaled", price: 36.20, chance: 1.90, img: "https://cdn.casehug.com/730/3b/3bfab044c6893393119ca1bec96c1938.png?width=640&quality=85", color: "#d32ee6", type: "skin" },
+        { name: "AWP | Ice Coaled", price: 49.20, chance: 1.069, img: "https://cdn.casehug.com/730/3d/3d1c93c9f0cf0f59a8bfee0147bc16e4.png?width=640&quality=85", color: "#d32ee6", type: "skin" },
+        { name: "AK-47 | Safety Net", price: 23.44, chance: 2.862, img: "https://cdn.casehug.com/730/b2/b2acee3b3f568cfd3d620a6235408803.png?width=640&quality=85", color: "#8847ff", type: "skin" },
+        { name: "SSG 08 | Fever Dream", price: 22.80, chance: 4.349, img: "https://cdn.casehug.com/730/44/445059fd015454e89218c2c66e4c87f8.png?width=640&quality=85", color: "#8847ff", type: "skin" },
+        { name: "AWP | Pit Viper", price: 7.32, chance: 10.895, img: "https://cdn.casehug.com/730/76/76caa59be6388ed7daeb959f844afbfc.png?width=640&quality=85", color: "#4b69ff", type: "skin" },
+        { name: "M4A1-S | Mud-Spec", price: 6.16, chance: 78.915, img: "https://cdn.casehug.com/730/29/29dd655ccb7857021d158fbd900d992f.png?width=640&quality=85", color: "#4b69ff", type: "skin" }
+    ]
+};
+
+// ==================== FUNKCJE GŁÓWNE ====================
+function switchView(view) {
+    document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+    if(view === 'cases') {
+        document.querySelector('.nav-btn:first-child').classList.add('active');
+        document.getElementById('casesView').classList.remove('hidden');
+        document.getElementById('battleView').classList.add('hidden');
+        document.getElementById('openView').classList.add('hidden');
+        stopConfetti();
+    } else {
+        document.querySelector('.nav-btn:last-child').classList.add('active');
+        document.getElementById('casesView').classList.add('hidden');
+        document.getElementById('battleView').classList.remove('hidden');
+        document.getElementById('openView').classList.add('hidden');
+        renderBattleCases();
+        stopConfetti();
+    }
+}
+
+function showMainView(view) {
+    if(view === 'cases') {
+        document.getElementById('casesView').classList.remove('hidden');
+        document.getElementById('openView').classList.add('hidden');
+        document.getElementById('battleView').classList.add('hidden');
+        stopConfetti();
+    }
+}
+
+function updateUI() {
+    document.getElementById('balanceDisplay').innerText = balance.toFixed(2) + ' zł';
+    const invDiv = document.getElementById('inventoryGrid');
+    invDiv.innerHTML = '';
+    [...inventory].reverse().forEach((item, i) => {
+        invDiv.innerHTML += `
+            <div class="inv-item" style="border-color:${item.color}">
+                <img src="${item.img}" loading="lazy"><br>
+                <small>${item.name}</small><br>
+                <b>${item.price.toFixed(2)} zł</b>
+                <button class="btn-sell" onclick="sellItem(${inventory.length-1-i})">SPRZEDAJ</button>
+            </div>
+        `;
+    });
+    localStorage.setItem('balance', balance);
+    localStorage.setItem('inventory', JSON.stringify(inventory));
+}
+
+function sellItem(index) {
+    balance += inventory[index].price;
+    inventory.splice(index, 1);
+    updateUI();
+}
+
+function openCase(type) {
+    if(isSpinning) return;
+    if(type === 'wood' && !canOpenDaily()) {
+        alert('Darmową skrzynkę możesz otworzyć dopiero za ' + getTimeRemaining());
+        return;
+    }
+    currentCase = type;
+    let title = "SKRZYNIA";
+    let btnText = "LOSUJ";
+    let price = 0;
+    
+    if(type === 'wood') { title = "WOOD DAILY"; btnText = "LOSUJ (DARMOWE)"; }
+    else if(type === 'gameon') { title = "GAME ON"; btnText = "LOSUJ ZA 1.20 ZŁ"; price = 1.20; }
+    else if(type === 'sticker') { title = "STICKER WAVE"; btnText = "LOSUJ ZA 2.00 ZŁ"; price = 2.00; }
+    else if(type === 'lore') { title = "LORE"; btnText = "LOSUJ ZA 1 200 ZŁ"; price = 1200.00; }
+    else if(type === 'farm') { title = "FARM KNIFE"; btnText = "LOSUJ ZA 35.00 ZŁ"; price = 35.00; }
+    else if(type === 'toxic') { title = "TOXIC"; btnText = "LOSUJ ZA 12.00 ZŁ"; price = 12.00; }
+    
+    document.getElementById('caseTitle').innerText = title;
+    document.getElementById('realOpenBtn').innerText = btnText;
+    
+    document.getElementById('casesView').classList.add('hidden');
+    document.getElementById('openView').classList.remove('hidden');
+    
+    displayCaseItems();
+    fillRoulettePreview();
+    
+    playSound(sfx.open);
+}
+
+function canOpenDaily() {
+    const now = Date.now();
+    return (now - lastDailyTime) >= 24 * 60 * 60 * 1000;
+}
+
+function getTimeRemaining() {
+    const now = Date.now();
+    const timePassed = now - lastDailyTime;
+    const timeLeft = 24 * 60 * 60 * 1000 - timePassed;
+    if(timeLeft <= 0) return "00:00:00";
+    const hours = Math.floor(timeLeft / (60 * 60 * 1000));
+    const minutes = Math.floor((timeLeft % (60 * 60 * 1000)) / (60 * 1000));
+    const seconds = Math.floor((timeLeft % (60 * 1000)) / 1000);
+    return `${hours.toString().padStart(2,'0')}:${minutes.toString().padStart(2,'0')}:${seconds.toString().padStart(2,'0')}`;
+}
+
+function updateDailyTimer() {
+    const timerEl = document.getElementById('dailyTimer');
+    const dailyCase = document.getElementById('dailyCase');
+    const dailyBtn = document.getElementById('dailyBtn');
+    if(canOpenDaily()) {
+        timerEl.style.color = '#00ff88';
+        timerEl.innerText = 'DOSTĘPNA!';
+        dailyCase.classList.remove('case-disabled');
+        dailyBtn.disabled = false;
+    } else {
+        timerEl.style.color = '#ff4b4b';
+        timerEl.innerText = getTimeRemaining();
+        dailyCase.classList.add('case-disabled');
+        dailyBtn.disabled = true;
+    }
+}
+
+function tryOpenDaily() {
+    if(canOpenDaily()) {
+        openCase('wood');
+    } else {
+        alert('Darmową skrzynkę możesz otworzyć dopiero za ' + getTimeRemaining());
+    }
+}
+
+function markDailyAsOpened() {
+    lastDailyTime = Date.now();
+    localStorage.setItem('lastDailyTime', lastDailyTime);
+    updateDailyTimer();
+}
+
+function displayCaseItems() {
+    const div = document.getElementById('caseItems');
+    div.innerHTML = '';
+    skins[currentCase].forEach(s => {
+        div.innerHTML += `
+            <div class="content-item" style="border-color:${s.color}">
+                <span class="chance-badge">${s.chance}%</span>
+                <img src="${s.img}" loading="lazy"><br>
+                <b>${s.name}</b><br>
+                ${s.price.toFixed(2)} zł
+            </div>
+        `;
+    });
+}
+
+function fillRoulettePreview() {
+    const track = document.getElementById('rouletteTrack');
+    track.style.transition = 'none';
+    track.style.transform = 'translateX(0)';
+    track.innerHTML = '';
+    for(let i=0; i<30; i++) {
+        const s = skins[currentCase][Math.floor(Math.random() * skins[currentCase].length)];
+        track.innerHTML += `<div class="skin-item" style="border-color:${s.color}"><img src="${s.img}" loading="lazy"><b>${s.name}</b></div>`;
+    }
+}
+
+function getRandomSkin() {
+    const pool = skins[currentCase];
+    
+    let modifiedPool = [...pool];
+    
+    if(lossStreak >= 3) {
+        const cheapIndices = [];
+        const expensiveIndices = [];
+        
+        modifiedPool.forEach((item, index) => {
+            if(item.price < 10) {
+                cheapIndices.push(index);
+            } else {
+                expensiveIndices.push(index);
+            }
+        });
+        
+        if(cheapIndices.length > 0 && expensiveIndices.length > 0) {
+            cheapIndices.forEach(cheapIndex => {
+                const takeChance = modifiedPool[cheapIndex].chance * 0.3;
+                modifiedPool[cheapIndex].chance -= takeChance;
+                
+                const bonusPerExpensive = takeChance / expensiveIndices.length;
+                expensiveIndices.forEach(index => {
+                    modifiedPool[index].chance += bonusPerExpensive;
+                });
+            });
+        }
+    }
+    
+    const rand = Math.random() * 100;
+    let sum = 0;
+    for(let item of modifiedPool) {
+        sum += item.chance;
+        if(rand < sum) {
+            if(item.price < 10) {
+                lossStreak++;
+                localStorage.setItem('lossStreak', lossStreak);
+            } else {
+                lossStreak = 0;
+                localStorage.setItem('lossStreak', lossStreak);
+            }
+            return item;
+        }
+    }
+    
+    const lastItem = modifiedPool[modifiedPool.length-1];
+    if(lastItem.price < 10) {
+        lossStreak++;
+    } else {
+        lossStreak = 0;
+    }
+    localStorage.setItem('lossStreak', lossStreak);
+    return lastItem;
+}
+
+function openCaseReal() {
+    if(isSpinning) return;
+    
+    let cost = 0;
+    if(currentCase === 'gameon') cost = 1.20;
+    else if(currentCase === 'sticker') cost = 2.00;
+    else if(currentCase === 'lore') cost = 1200.00;
+    else if(currentCase === 'farm') cost = 35.00;
+    else if(currentCase === 'toxic') cost = 12.00;
+    
+    if(cost > 0 && balance < cost) {
+        alert('Brak środków!');
+        return;
+    }
+    
+    isDemoMode = false;
+    
+    if(currentCase === 'gameon' || currentCase === 'sticker' || currentCase === 'lore' || currentCase === 'farm' || currentCase === 'toxic') {
+        balance -= cost;
+    } else if(currentCase === 'wood') {
+        if(!canOpenDaily()) {
+            alert('Darmową skrzynkę możesz otworzyć dopiero za ' + getTimeRemaining());
+            return;
+        }
+        markDailyAsOpened();
+    }
+    
+    updateUI();
+    startOpening();
+}
+
+function openCaseDemo() {
+    if(isSpinning) return;
+    isDemoMode = true;
+    startOpening();
+}
+
+function startOpening() {
+    isSpinning = true;
+    const winningItem = getRandomSkin();
+    
+    const track = document.getElementById('rouletteTrack');
+    const container = track.parentElement;
+    const itemWidth = 210;
+    
+    track.style.transition = 'none';
+    track.innerHTML = '';
+    
+    const winPosition = 35;
+    
+    for(let i=0; i<60; i++) {
+        const item = (i >= winPosition - 2 && i <= winPosition + 2) ? winningItem : skins[currentCase][Math.floor(Math.random() * skins[currentCase].length)];
+        track.innerHTML += `<div class="skin-item" style="border-color:${item.color}" data-item='${JSON.stringify(item)}'><img src="${item.img}" loading="lazy"><b>${item.name}</b></div>`;
+    }
+
+    track.offsetHeight;
+
+    setTimeout(() => {
+        track.style.transition = 'transform 3s cubic-bezier(0.2, 0.9, 0.3, 1)';
+        track.style.transform = `translateX(-${itemWidth * 15}px)`;
+        
+        const tickInterval = setInterval(() => {
+            if (isSpinning) {
+                playSound(sfx.tick, 0.2);
+            } else {
+                clearInterval(tickInterval);
+            }
+        }, 150);
+        
+        setTimeout(() => {
+            track.style.transition = 'transform 3s cubic-bezier(0.1, 0.8, 0.2, 1)';
+            const targetPosition = (winPosition * itemWidth) - (container.offsetWidth / 2) + (itemWidth / 2);
+            track.style.transform = `translateX(-${targetPosition}px)`;
+        }, 3000);
+        
+        setTimeout(() => {
+            clearInterval(tickInterval);
+        }, 6500);
+    }, 100);
+
+    setTimeout(() => {
+        if(!isDemoMode) {
+            inventory.push(winningItem);
+            updateUI();
+        }
+        
+        if(winningItem.price > 100) {
+            playSound(sfx.best);
+        } else {
+            playSound(sfx.end);
+        }
+        
+        showWinPopup(winningItem);
+        isSpinning = false;
+        
+        setTimeout(() => {
+            if(!isSpinning) fillRoulettePreview();
+        }, 1000);
+    }, 6500);
+}
+
+function showWinPopup(item) {
+    document.getElementById('popupImg').src = item.img;
+    document.getElementById('popupName').innerText = item.name;
+    document.getElementById('popupPrice').innerText = item.price.toFixed(2) + ' zł';
+    document.getElementById('demoInfo').classList.toggle('hidden', !isDemoMode);
+    document.getElementById('winPopup').classList.add('active');
+}
+
+function closeWinPopup() {
+    document.getElementById('winPopup').classList.remove('active');
+}
+
+function addLiveDrop() {
+    const bar = document.getElementById('liveDrops');
+    const allItems = [...skins.wood, ...skins.gameon, ...skins.sticker, ...skins.lore, ...skins.farm, ...skins.toxic];
+    const item = allItems[Math.floor(Math.random() * allItems.length)];
+    const drop = document.createElement('div');
+    drop.className = 'drop-item';
+    drop.style.borderColor = item.color;
+    drop.innerHTML = `<img src="${item.img}" loading="lazy"><div><b>${item.name}</b><br><span>${item.price.toFixed(2)} zł</span></div>`;
+    bar.prepend(drop);
+    if(bar.children.length > 12) bar.removeChild(bar.lastChild);
+}
+
+function addOgryMessage() {
+    const ogryDiv = document.getElementById('ogryMessage');
+    const allItems = [...skins.wood, ...skins.gameon, ...skins.sticker, ...skins.lore, ...skins.farm, ...skins.toxic];
+    const item = allItems[Math.floor(Math.random() * allItems.length)];
+    const users = ['xKratos', 'Mystic', 'Hunter', 'Fury', 'Shadow', 'Raven', 'Viper', 'Ghost', 'Cyclon', 'Striker'];
+    const user = users[Math.floor(Math.random() * users.length)];
+    ogryDiv.innerHTML = `<span>🎲 ${user}</span> wydropił <b>${item.name}</b> (${item.price.toFixed(2)} zł)!`;
+}
+
+// ==================== FUNKCJE BITWY - POPRAWIONE ====================
+const battleCases = [
+    { id: 'gameon', name: 'GAME ON', price: 1.20, img: 'https://cdn.casehug.com/cases/GAME_ON.png', loot: skins.gameon },
+    { id: 'wave', name: 'WAVE', price: 2.50, img: 'https://cdn.casehug.com/content/case/stickerCapsules/WAVE_1755779687.png', loot: skins.sticker },
+    { id: 'toxic', name: 'TOXIC', price: 12.00, img: 'https://cdn.casehug.com/cases/TOXIC.png', loot: skins.toxic },
+    { id: 'farm', name: 'FARM KNIFE', price: 35.00, img: 'https://cdn.casehug.com/cases/FARM_KNIFE.png', loot: skins.farm },
+    { id: 'lore', name: 'LORE', price: 1200.00, img: 'https://cdn.casehug.com/cases/HOWL_4.png', loot: skins.lore }
+];
+
+let battleConfig = { mode: 'NORMAL', players: 2, counts: {} };
+battleCases.forEach(c => battleConfig.counts[c.id] = 0);
+let battleQueue = [];
+let battleState = { current: 0, pData: [] };
+let battleLossStreak = 0;
+let allPlayersSkins = [];
+
+function renderBattleCases() {
+    const grid = document.getElementById('battleCaseGrid');
+    grid.innerHTML = '';
+    battleCases.forEach(c => {
+        grid.innerHTML += `
+            <div class="case-card" style="cursor:default;">
+                <img src="${c.img}" style="width:100px; height:80px; object-fit:contain;">
+                <div style="font-weight:700;">${c.name}</div>
+                <div style="color:#555; margin-bottom:15px;">${c.price.toFixed(2)} zł</div>
+                <div class="qty-controls">
+                    <button class="q-btn" onclick="addBattleCase('${c.id}', -1)">-</button>
+                    <span id="bq-${c.id}" style="font-weight:900; width:20px;">0</span>
+                    <button class="q-btn" onclick="addBattleCase('${c.id}', 1)">+</button>
+                </div>
+            </div>`;
+    });
+}
+
+function addBattleCase(id, d) {
+    battleConfig.counts[id] = Math.max(0, battleConfig.counts[id] + d);
+    document.getElementById(`bq-${id}`).innerText = battleConfig.counts[id];
+    let totalRounds = 0;
+    let totalCost = 0;
+    battleCases.forEach(c => { 
+        totalRounds += battleConfig.counts[c.id]; 
+        totalCost += battleConfig.counts[c.id] * c.price; 
+    });
+    document.getElementById('battleRounds').innerText = totalRounds;
+    document.getElementById('battleCost').innerText = totalCost.toFixed(2) + ' zł';
+    document.getElementById('startBattleBtn').disabled = totalRounds === 0;
+}
+
+function setBattleMode(m, el) {
+    battleConfig.mode = m;
+    document.querySelectorAll('#battleView .mode-normal, #battleView .mode-underdog, #battleView .mode-pity').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    battleLossStreak = 0;
+}
+
+function setBattlePlayers(n, el) {
+    battleConfig.players = n;
+    document.querySelectorAll('#battleView .player-pill').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+}
+
+// 🎯 FUNKCJA DLA GRACZA (TY)
+function getPlayerRandomSkin(caseData) {
+    const pool = caseData.loot;
+    
+    if(battleLossStreak >= 3) {
+        const expensiveItems = pool.filter(item => item.price > 100);
+        if(expensiveItems.length > 0) {
+            const guaranteedWin = expensiveItems[Math.floor(Math.random() * expensiveItems.length)];
+            battleLossStreak = 0;
+            return guaranteedWin;
+        }
+    }
+    
+    const rand = Math.random() * 100;
+    let sum = 0;
+    for(let item of pool) {
+        sum += item.chance;
+        if(rand < sum) {
+            if(item.price < 10) {
+                battleLossStreak++;
+            } else {
+                battleLossStreak = 0;
+            }
+            return item;
+        }
+    }
+    
+    const lastItem = pool[pool.length-1];
+    if(lastItem.price < 10) {
+        battleLossStreak++;
+    } else {
+        battleLossStreak = 0;
+    }
+    return lastItem;
+}
+
+// 🎯 FUNKCJA DLA BOTÓW (70% szans na tani skin)
+function getBotRandomSkin(caseData) {
+    const pool = caseData.loot;
+    
+    if(Math.random() < 0.7) {
+        const cheapItems = pool.filter(item => item.price < 10);
+        if(cheapItems.length > 0) {
+            return cheapItems[Math.floor(Math.random() * cheapItems.length)];
+        }
+    }
+    
+    const rand = Math.random() * 100;
+    let sum = 0;
+    for(let item of pool) {
+        sum += item.chance;
+        if(rand < sum) {
+            return item;
+        }
+    }
+    return pool[pool.length-1];
+}
+
+function startBattle() {
+    const battleCost = parseFloat(document.getElementById('battleCost').innerText);
+    if(balance < battleCost) {
+        alert('Masz za mało środków!');
+        return;
+    }
+    
+    playSound(sfx.open);
+    balance -= battleCost;
+    updateUI();
+    
+    allPlayersSkins = [];
+    battleLossStreak = 0;
+    
+    battleQueue = [];
+    battleCases.forEach(c => { 
+        for(let i=0; i<battleConfig.counts[c.id]; i++) battleQueue.push(c); 
+    });
+    
+    battleState.pData = Array.from({length: battleConfig.players}, (_, i) => ({ id: i+1, total: 0 }));
+    
+    document.getElementById('battleSetup').style.display = 'none';
+    document.getElementById('battleArena').style.display = 'block';
+    
+    const grid = document.getElementById('battleGrid');
+    grid.style.gridTemplateColumns = `repeat(${battleConfig.players}, 1fr)`;
+    grid.innerHTML = '';
+    
+    battleState.pData.forEach(p => {
+        grid.innerHTML += `<div class="player-card" id="bpc-${p.id}"><div class="v-roulette"><div class="v-track" id="bvt-${p.id}"></div></div><div style="color:#555; font-size:0.8rem;">GRACZ ${p.id} ${p.id===1?'(TY)':''}</div><div class="total-money" id="bpt-${p.id}">0.00 zł</div></div>`;
+    });
+    
+    battleState.current = 0;
+    runBattleRound();
+}
+
+function runBattleRound() {
+    if(battleState.current >= battleQueue.length) return finishBattle();
+    
+    const c = battleQueue[battleState.current];
+    document.getElementById('battleRoundTitle').innerText = `RUNDA ${battleState.current + 1}`;
+    document.getElementById('battleCaseImg').src = c.img;
+    
+    battleState.pData.forEach(p => {
+        const track = document.getElementById(`bvt-${p.id}`);
+        track.style.transition = 'none';
+        track.style.transform = 'translateY(0)';
+        track.innerHTML = '';
+        
+        for(let i=0; i<40; i++) {
+            const randomSkin = c.loot[Math.floor(Math.random() * c.loot.length)];
+            track.innerHTML += `<div class="v-item"><img src="${randomSkin.img}"></div>`;
+        }
+        
+        let winningSkin;
+        if(p.id === 1) {
+            winningSkin = getPlayerRandomSkin(c);
+        } else {
+            winningSkin = getBotRandomSkin(c);
+        }
+        
+        allPlayersSkins.push({
+            ...winningSkin,
+            playerId: p.id,
+            round: battleState.current + 1
+        });
+        
+        track.children[35].innerHTML = `<img src="${winningSkin.img}">`;
+        
+        setTimeout(() => { 
+            track.style.transition = 'transform 2.5s cubic-bezier(0.1, 0, 0.1, 1)'; 
+            track.style.transform = `translateY(-${35 * 100 - 25}px)`; 
+            playSound(sfx.tick, 0.1);
+        }, 50);
+        
+        setTimeout(() => { 
+            p.total += winningSkin.price; 
+            document.getElementById(`bpt-${p.id}`).innerText = p.total.toFixed(2) + ' zł'; 
+            updateBattleLeader(); 
+        }, 2600);
+    });
+    
+    setTimeout(() => { 
+        battleState.current++; 
+        runBattleRound(); 
+    }, 3800);
+}
+
+function updateBattleLeader() {
+    document.querySelectorAll('#battleGrid .player-card').forEach(x => x.classList.remove('is-leading'));
+    let lider = battleState.pData.reduce((a, b) => (battleConfig.mode === 'NORMAL' ? a.total > b.total : a.total < b.total) ? a : b);
+    if(lider.total > 0) document.getElementById(`bpc-${lider.id}`).classList.add('is-leading');
+}
+
+function finishBattle() {
+    let winner = battleState.pData.reduce((a, b) => (battleConfig.mode === 'NORMAL' ? a.total > b.total : a.total < b.total) ? a : b);
+    let isDraw = battleState.pData.every(p => p.total === battleState.pData[0].total);
+    
+    battleState.pData.forEach(p => {
+        const el = document.getElementById(`bpc-${p.id}`);
+        el.classList.remove('is-leading');
+        el.classList.add(p.id === winner.id && !isDraw ? 'final-winner' : 'final-loser');
+    });
+
+    const overlay = document.getElementById('endOverlay');
+    const status = document.getElementById('statusMsg');
+    const statusIcon = document.getElementById('battleStatusIcon');
+    
+    if(isDraw) {
+        status.innerText = "REMIS!";
+        status.className = "end-msg msg-draw";
+        statusIcon.src = "https://cdn.g4skins.com/builds/v1.32.1-prod/img/battle/status/lose.png";
+        document.getElementById('winnerName').innerText = `Nikt nie wygrywa (${winner.total.toFixed(2)} zł)`;
+        playSound(sfx.battleDraw);
+    } else if(winner.id === 1) {
+        allPlayersSkins.forEach(skin => {
+            inventory.push(skin);
+        });
+        updateUI();
+        
+        status.innerText = "BRAWO! WYGRAŁEŚ!";
+        status.className = "end-msg msg-win";
+        statusIcon.src = "https://cdn.g4skins.com/builds/v1.32.1-prod/img/battle/status/win.png";
+        document.getElementById('winnerName').innerHTML = `Zdobyłeś ${allPlayersSkins.length} skinów o łącznej wartości ${winner.total.toFixed(2)} zł!`;
+        
+        playSound(sfx.battleWin);
+        startConfetti();
+    } else {
+        status.innerText = "BUUU... PRZEGRAŁEŚ!";
+        status.className = "end-msg msg-lose";
+        statusIcon.src = "https://cdn.g4skins.com/builds/v1.32.1-prod/img/battle/status/lose.png";
+        document.getElementById('winnerName').innerText = `Zwycięzca: Gracz ${winner.id} (${winner.total.toFixed(2)} zł)`;
+        
+        playSound(sfx.battleLose);
+    }
+
+    setTimeout(() => {
+        overlay.style.display = 'flex';
+    }, 1500);
+}
+
+function exitBattle() {
+    document.getElementById('battleSetup').style.display = 'block';
+    document.getElementById('battleArena').style.display = 'none';
+    document.getElementById('endOverlay').style.display = 'none';
+    stopConfetti();
+    
+    battleCases.forEach(c => {
+        battleConfig.counts[c.id] = 0;
+        const el = document.getElementById(`bq-${c.id}`);
+        if(el) el.innerText = '0';
+    });
+    document.getElementById('battleRounds').innerText = '0';
+    document.getElementById('battleCost').innerText = '0.00 zł';
+    document.getElementById('startBattleBtn').disabled = true;
+}
+
+// ==================== INICJALIZACJA ====================
+setInterval(addLiveDrop, 3000);
+setInterval(addOgryMessage, 5000);
+setInterval(updateDailyTimer, 1000);
+
+for(let i=0; i<8; i++) addLiveDrop();
+addOgryMessage();
+updateDailyTimer();
+updateUI();
+renderBattleCases();
+
+document.addEventListener('error', function(e) {
+    if(e.target.tagName === 'IMG') {
+        console.log('Błąd ładowania obrazka:', e.target.src);
+        e.target.src = 'https://cdn.casehug.com/730/ab/ab94c6ed7fd6b5b1162cf71c90ddba35.png?width=640&quality=85';
+    }
+}, true);
