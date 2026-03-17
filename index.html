@@ -303,6 +303,25 @@
         }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
+        .btn-sell-all {
+            background: #ffaa00;
+            color: black;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 1rem;
+            margin: 10px 0;
+            box-shadow: 0 0 20px rgba(255,170,0,0.3);
+            transition: 0.3s;
+        }
+        .btn-sell-all:hover {
+            background: #ffbb22;
+            box-shadow: 0 0 30px rgba(255,170,0,0.6);
+            transform: scale(1.02);
+        }
+
         .roulette-wrapper { 
             width: 100%; 
             height: 240px; 
@@ -504,6 +523,13 @@
         .inv-item img { width: 100px; height: 80px; object-fit: contain; transition: 0.3s; }
         .inv-item:hover img {
             transform: scale(1.1);
+        }
+
+        .inventory-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 20px 0;
         }
 
         .ogry-info { 
@@ -801,15 +827,26 @@
             <div class="case-price">300.00 ZŁ</div>
             <button class="btn" style="background:#c0a0ff; color:#000;">OTWÓRZ</button>
         </div>
-        <!-- IMPERIAL (Sticker Capsule) -->
+        <!-- IMPERIAL -->
         <div class="case-card" onclick="openCase('imperial')">
             <div class="case-icon"><img src="https://cdn.casehug.com/content/case/stickerCapsules/IMPERIAL_1756306033.png" loading="lazy"></div>
             <h3 style="color:#ffd700">IMPERIAL</h3>
             <div class="case-price">25.00 ZŁ</div>
             <button class="btn" style="background:#ffd700; color:#000;">OTWÓRZ</button>
         </div>
+        <!-- SNAKE -->
+        <div class="case-card" onclick="openCase('snake')">
+            <div class="case-icon"><img src="https://cdn.casehug.com/cases/SNAKE.png" loading="lazy"></div>
+            <h3 style="color:#00ffaa">SNAKE</h3>
+            <div class="case-price">350.00 ZŁ</div>
+            <button class="btn" style="background:#00ffaa; color:#000;">OTWÓRZ</button>
+        </div>
     </div>
-    <h2>💼 TWOJE PRZEDMIOTY</h2>
+    
+    <div class="inventory-header">
+        <h2>💼 TWOJE PRZEDMIOTY</h2>
+        <button class="btn-sell-all" onclick="sellAllItems()">🤑 SPRZEDAJ WSZYSTKO</button>
+    </div>
     <div id="inventoryGrid" class="inv-grid"></div>
 </div>
 
@@ -965,7 +1002,7 @@
     let lastDailyTime = localStorage.getItem('lastDailyTime') ? parseInt(localStorage.getItem('lastDailyTime')) : 0;
     let lossStreak = parseInt(localStorage.getItem('lossStreak')) || 0;
 
-    // DEFINICJE WSZYSTKICH SKRZYŃ - DODANA IMPERIAL!
+    // DEFINICJE WSZYSTKICH SKRZYŃ - DODANA SNAKE!
     const skins = {
         wood: [
             { name: "PP-Bizon | Facility Sketch", price: 0.50, chance: 33.3, img: "https://cdn.casehug.com/730/ab/ab94c6ed7fd6b5b1162cf71c90ddba35.png?width=640&quality=85", color: "#4b69ff", type: "skin" },
@@ -1041,7 +1078,6 @@
             { name: "USP-S | Jawbreaker", price: 136.00, chance: 5.0, img: "https://cdn.casehug.com/730/0d/0d8c5f9d132d9d45d68eeb6ae91aa625.png?width=640&quality=85", color: "#c0a0ff", type: "skin" },
             { name: "Zwykły skin", price: 1.00, chance: 88.2, img: "https://cdn.casehug.com/730/f1/f168190ca4247bb14aab374c92cfb512.png?width=640&quality=85", color: "#c0a0ff", type: "skin" }
         ],
-        // NOWA SKRZYNKA IMPERIAL (Sticker Capsule)
         imperial: [
             { name: "Sticker | Howling Dawn", price: 11871.72, chance: 0.1, img: "https://cdn.casehug.com/730/1c/1c0da2695d7e686c2e318198bc256623.png?width=640&quality=85", color: "#ffd700", type: "sticker" },
             { name: "Sticker | Crown", price: 2260.68, chance: 0.3, img: "https://cdn.casehug.com/730/96/9668142bacdf72a7785a44d616c50a36.png?width=640&quality=85", color: "#ffd700", type: "sticker" },
@@ -1053,6 +1089,18 @@
             { name: "Sticker | Run T, Run", price: 0.68, chance: 20.0, img: "https://cdn.casehug.com/730/e8/e8e22e4737d6d06d8fb159883b1fa898.png?width=640&quality=85", color: "#ffd700", type: "sticker" },
             { name: "Sticker | Bosh", price: 20.40, chance: 20.0, img: "https://cdn.casehug.com/730/2a/2a887ddf5bcab3307a9e3cb2e22e5f15.png?width=640&quality=85", color: "#ffd700", type: "sticker" },
             { name: "Sticker | Showdown", price: 28.72, chance: 20.1, img: "https://cdn.casehug.com/730/39/3929b366e57d8c4e38258c96ba9b94b1.png?width=640&quality=85", color: "#ffd700", type: "sticker" }
+        ],
+        // NOWA SKRZYNKA SNAKE - wymarzone noże!
+        snake: [
+            { name: "★ Butterfly Knife | Gamma Doppler", price: 13244.08, chance: 0.1, img: "https://cdn.casehug.com/730/09/09cc1b599aa8866cf506ff6ab8ffa147.png?width=640&quality=85", color: "#00ffaa", type: "knife" },
+            { name: "★ Butterfly Knife | Doppler", price: 13204.76, chance: 0.2, img: "https://cdn.casehug.com/730/89/8902e6d09c36cf66df9716e0f8a8daec.png?width=640&quality=85", color: "#00ffaa", type: "knife" },
+            { name: "★ Karambit | Doppler", price: 10000.00, chance: 0.3, img: "https://cdn.casehug.com/730/63/6362cc47bd05afd34894fc73970281a8.png?width=640&quality=85", color: "#00ffaa", type: "knife" },
+            { name: "★ M9 Bayonet | Doppler", price: 6308.88, chance: 0.5, img: "https://cdn.casehug.com/730/f2/f23b221f74cebc68aec3070f907683de.png?width=640&quality=85", color: "#00ffaa", type: "knife" },
+            { name: "Glock-18 | Gamma Doppler", price: 584.92, chance: 1.0, img: "https://cdn.casehug.com/730/56/566b260a7b663b579bfa5ede9321128f.png?width=640&quality=85", color: "#00ffaa", type: "skin" },
+            { name: "Desert Eagle | Printstream", price: 258.60, chance: 2.0, img: "https://cdn.casehug.com/730/33/33391818759e7127c4f61ad842a05ce1.png?width=640&quality=85", color: "#00ffaa", type: "skin" },
+            { name: "AK-47 | Frontside Misty", price: 214.96, chance: 3.0, img: "https://cdn.casehug.com/730/d9/d93301718757dd98163b91da61dedef3.png?width=640&quality=85", color: "#00ffaa", type: "skin" },
+            { name: "AK-47 | Point Disarray", price: 87.60, chance: 5.0, img: "https://cdn.casehug.com/730/00/00e6f01f0469188466811ab2c09131dc.png?width=640&quality=85", color: "#00ffaa", type: "skin" },
+            { name: "M4A1-S | Black Lotus", price: 41.68, chance: 87.9, img: "https://cdn.casehug.com/730/6c/6c24bbdbf080a46acc61fb78151869ed.png?width=640&quality=85", color: "#00ffaa", type: "skin" }
         ]
     };
 
@@ -1108,6 +1156,24 @@
         updateUI();
     }
 
+    // NOWA FUNKCJA - SPRZEDAJ WSZYSTKO!
+    function sellAllItems() {
+        if (inventory.length === 0) {
+            alert('Nie masz żadnych przedmiotów!');
+            return;
+        }
+        
+        const totalValue = inventory.reduce((sum, item) => sum + item.price, 0);
+        const confirmMessage = `Czy na pewno chcesz sprzedać WSZYSTKIE przedmioty?\n\nLiczba przedmiotów: ${inventory.length}\nŁączna wartość: ${totalValue.toFixed(2)} zł`;
+        
+        if (confirm(confirmMessage)) {
+            balance += totalValue;
+            inventory = [];
+            updateUI();
+            playSound(sfx.end);
+        }
+    }
+
     function openCase(type) {
         if(isSpinning) return;
         if(type === 'wood' && !canOpenDaily()) {
@@ -1129,6 +1195,7 @@
         else if(type === 'warzone') { title = "WARZONE"; btnText = "LOSUJ ZA 150.00 ZŁ"; price = 150.00; }
         else if(type === 'arabesque') { title = "ARABESQUE"; btnText = "LOSUJ ZA 300.00 ZŁ"; price = 300.00; }
         else if(type === 'imperial') { title = "IMPERIAL"; btnText = "LOSUJ ZA 25.00 ZŁ"; price = 25.00; }
+        else if(type === 'snake') { title = "SNAKE"; btnText = "LOSUJ ZA 350.00 ZŁ"; price = 350.00; }
         
         document.getElementById('caseTitle').innerText = title;
         document.getElementById('realOpenBtn').innerText = btnText;
@@ -1265,6 +1332,7 @@
         else if(currentCase === 'warzone') cost = 150.00;
         else if(currentCase === 'arabesque') cost = 300.00;
         else if(currentCase === 'imperial') cost = 25.00;
+        else if(currentCase === 'snake') cost = 350.00;
         
         if(cost > 0 && balance < cost) {
             alert('Brak środków!');
@@ -1273,7 +1341,7 @@
         
         isDemoMode = false;
         
-        if(currentCase === 'gameon' || currentCase === 'sticker' || currentCase === 'lore' || currentCase === 'farm' || currentCase === 'toxic' || currentCase === 'hydra' || currentCase === 'warzone' || currentCase === 'arabesque' || currentCase === 'imperial') {
+        if(currentCase === 'gameon' || currentCase === 'sticker' || currentCase === 'lore' || currentCase === 'farm' || currentCase === 'toxic' || currentCase === 'hydra' || currentCase === 'warzone' || currentCase === 'arabesque' || currentCase === 'imperial' || currentCase === 'snake') {
             balance -= cost;
         } else if(currentCase === 'wood') {
             if(!canOpenDaily()) {
@@ -1371,7 +1439,7 @@
 
     function addLiveDrop() {
         const bar = document.getElementById('liveDrops');
-        const allItems = [...skins.wood, ...skins.gameon, ...skins.sticker, ...skins.lore, ...skins.farm, ...skins.toxic, ...skins.hydra, ...skins.warzone, ...skins.arabesque, ...skins.imperial];
+        const allItems = [...skins.wood, ...skins.gameon, ...skins.sticker, ...skins.lore, ...skins.farm, ...skins.toxic, ...skins.hydra, ...skins.warzone, ...skins.arabesque, ...skins.imperial, ...skins.snake];
         const item = allItems[Math.floor(Math.random() * allItems.length)];
         const drop = document.createElement('div');
         drop.className = 'drop-item';
@@ -1383,7 +1451,7 @@
 
     function addOgryMessage() {
         const ogryDiv = document.getElementById('ogryMessage');
-        const allItems = [...skins.wood, ...skins.gameon, ...skins.sticker, ...skins.lore, ...skins.farm, ...skins.toxic, ...skins.hydra, ...skins.warzone, ...skins.arabesque, ...skins.imperial];
+        const allItems = [...skins.wood, ...skins.gameon, ...skins.sticker, ...skins.lore, ...skins.farm, ...skins.toxic, ...skins.hydra, ...skins.warzone, ...skins.arabesque, ...skins.imperial, ...skins.snake];
         const item = allItems[Math.floor(Math.random() * allItems.length)];
         const users = ['xKratos', 'Mystic', 'Hunter', 'Fury', 'Shadow', 'Raven', 'Viper', 'Ghost', 'Cyclon', 'Striker'];
         const user = users[Math.floor(Math.random() * users.length)];
@@ -1400,7 +1468,8 @@
         { id: 'hydra', name: 'HYDRA', price: 25.00, img: 'https://cdn.casehug.com/cases/HYDRA_2.png', loot: skins.hydra },
         { id: 'warzone', name: 'WARZONE', price: 150.00, img: 'https://cdn.casehug.com/cases/WARZONE.png', loot: skins.warzone },
         { id: 'arabesque', name: 'ARABESQUE', price: 300.00, img: 'https://cdn.casehug.com/cases/ARABESQUE.png', loot: skins.arabesque },
-        { id: 'imperial', name: 'IMPERIAL', price: 25.00, img: 'https://cdn.casehug.com/content/case/stickerCapsules/IMPERIAL_1756306033.png', loot: skins.imperial }
+        { id: 'imperial', name: 'IMPERIAL', price: 25.00, img: 'https://cdn.casehug.com/content/case/stickerCapsules/IMPERIAL_1756306033.png', loot: skins.imperial },
+        { id: 'snake', name: 'SNAKE', price: 350.00, img: 'https://cdn.casehug.com/cases/SNAKE.png', loot: skins.snake }
     ];
 
     let battleConfig = { mode: 'NORMAL', players: 2, counts: {} };
