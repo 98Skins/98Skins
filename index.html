@@ -962,6 +962,13 @@
             <div class="case-price">350.00 ZŁ</div>
             <button class="btn" style="background:#00ffaa; color:#000;">OTWÓRZ</button>
         </div>
+        <!-- GOLD NOVA -->
+        <div class="case-card" onclick="openCase('goldnova')">
+            <div class="case-icon"><img src="https://cdn.casehug.com/cases/GOLD_NOVA.png" loading="lazy"></div>
+            <h3 style="color:#ffd966">GOLD NOVA</h3>
+            <div class="case-price">120.00 ZŁ</div>
+            <button class="btn" style="background:#ffd966; color:#000;">OTWÓRZ</button>
+        </div>
     </div>
     
     <div class="inventory-header">
@@ -1226,7 +1233,7 @@
     let lastDailyTime = localStorage.getItem('lastDailyTime') ? parseInt(localStorage.getItem('lastDailyTime')) : 0;
     let lossStreak = parseInt(localStorage.getItem('lossStreak')) || 0;
 
-    // DEFINICJE WSZYSTKICH SKRZYŃ
+    // DEFINICJE WSZYSTKICH SKRZYŃ - DODANA GOLD NOVA!
     const skins = {
         wood: [
             { name: "PP-Bizon | Facility Sketch", price: 0.50, chance: 33.3, img: "https://cdn.casehug.com/730/ab/ab94c6ed7fd6b5b1162cf71c90ddba35.png?width=640&quality=85", color: "#4b69ff", type: "skin" },
@@ -1324,6 +1331,19 @@
             { name: "AK-47 | Frontside Misty", price: 214.96, chance: 3.0, img: "https://cdn.casehug.com/730/d9/d93301718757dd98163b91da61dedef3.png?width=640&quality=85", color: "#00ffaa", type: "skin" },
             { name: "AK-47 | Point Disarray", price: 87.60, chance: 5.0, img: "https://cdn.casehug.com/730/00/00e6f01f0469188466811ab2c09131dc.png?width=640&quality=85", color: "#00ffaa", type: "skin" },
             { name: "M4A1-S | Black Lotus", price: 41.68, chance: 87.9, img: "https://cdn.casehug.com/730/6c/6c24bbdbf080a46acc61fb78151869ed.png?width=640&quality=85", color: "#00ffaa", type: "skin" }
+        ],
+        // NOWA SKRZYNKA GOLD NOVA
+        goldnova: [
+            { name: "★ M9 Bayonet | Gamma Doppler", price: 8629.72, chance: 0.2, img: "https://cdn.casehug.com/730/7f/7ff5068af5fb452f2d32f2faa9690db0.png?width=640&quality=85", color: "#ffd966", type: "knife" },
+            { name: "AK-47 | Bloodsport", price: 1022.66, chance: 1.0, img: "https://cdn.casehug.com/730/21/2113c769a762320aa7ec197c118c47eb.png?width=640&quality=85", color: "#ffd966", type: "skin" },
+            { name: "AK-47 | The Oligarch", price: 573.52, chance: 2.0, img: "https://cdn.casehug.com/730/63/63bf376e62a33d725ba0c4960c4d5a2f.png?width=640&quality=85", color: "#ffd966", type: "skin" },
+            { name: "AK-47 | Orbit Mk01", price: 753.00, chance: 3.0, img: "https://cdn.casehug.com/730/7a/7a85097e714faa495fab2e4c3df0b085.png?width=640&quality=85", color: "#ffd966", type: "skin" },
+            { name: "AWP | Wildfire", price: 1010.92, chance: 4.0, img: "https://cdn.casehug.com/730/fe/fef77ceef9c0b982ee438b14ab5b93cd.png?width=640&quality=85", color: "#ffd966", type: "skin" },
+            { name: "P250 | Red Rock", price: 191.74, chance: 10.0, img: "https://cdn.casehug.com/730/42/4249fcd9c10583689e2e16ae6ae3f1aa.png?width=640&quality=85", color: "#ffd966", type: "skin" },
+            { name: "MP9 | Hydra", price: 56.28, chance: 15.0, img: "https://cdn.casehug.com/730/91/91eeb483e206384ee0e9609f9f58688c.png?width=640&quality=85", color: "#ffd966", type: "skin" },
+            { name: "AUG | Death by Puppy", price: 31.50, chance: 20.0, img: "https://cdn.casehug.com/730/12/12301f9ed01b59dac2b03c166838cd62.png?width=640&quality=85", color: "#ffd966", type: "skin" },
+            { name: "Tec-9 | Decimator", price: 189.06, chance: 24.8, img: "https://cdn.casehug.com/730/dc/dc7e467e7ab0be2dca2acd6a81cfc2af.png?width=640&quality=85", color: "#ffd966", type: "skin" },
+            { name: "Zwykły skin", price: 1.00, chance: 20.0, img: "https://cdn.casehug.com/730/f1/f168190ca4247bb14aab374c92cfb512.png?width=640&quality=85", color: "#ffd966", type: "skin" }
         ]
     };
 
@@ -1419,6 +1439,7 @@
         else if(type === 'arabesque') { title = "ARABESQUE"; btnText = "LOSUJ ZA 300.00 ZŁ"; price = 300.00; }
         else if(type === 'imperial') { title = "IMPERIAL"; btnText = "LOSUJ ZA 25.00 ZŁ"; price = 25.00; }
         else if(type === 'snake') { title = "SNAKE"; btnText = "LOSUJ ZA 350.00 ZŁ"; price = 350.00; }
+        else if(type === 'goldnova') { title = "GOLD NOVA"; btnText = "LOSUJ ZA 120.00 ZŁ"; price = 120.00; }
         
         document.getElementById('caseTitle').innerText = title;
         document.getElementById('realOpenBtn').innerText = btnText;
@@ -1556,6 +1577,7 @@
         else if(currentCase === 'arabesque') cost = 300.00;
         else if(currentCase === 'imperial') cost = 25.00;
         else if(currentCase === 'snake') cost = 350.00;
+        else if(currentCase === 'goldnova') cost = 120.00;
         
         if(cost > 0 && balance < cost) {
             alert('Brak środków!');
@@ -1564,7 +1586,7 @@
         
         isDemoMode = false;
         
-        if(currentCase === 'gameon' || currentCase === 'sticker' || currentCase === 'lore' || currentCase === 'farm' || currentCase === 'toxic' || currentCase === 'hydra' || currentCase === 'warzone' || currentCase === 'arabesque' || currentCase === 'imperial' || currentCase === 'snake') {
+        if(currentCase === 'gameon' || currentCase === 'sticker' || currentCase === 'lore' || currentCase === 'farm' || currentCase === 'toxic' || currentCase === 'hydra' || currentCase === 'warzone' || currentCase === 'arabesque' || currentCase === 'imperial' || currentCase === 'snake' || currentCase === 'goldnova') {
             balance -= cost;
         } else if(currentCase === 'wood') {
             if(!canOpenDaily()) {
@@ -1662,7 +1684,7 @@
 
     function addLiveDrop() {
         const bar = document.getElementById('liveDrops');
-        const allItems = [...skins.wood, ...skins.gameon, ...skins.sticker, ...skins.lore, ...skins.farm, ...skins.toxic, ...skins.hydra, ...skins.warzone, ...skins.arabesque, ...skins.imperial, ...skins.snake];
+        const allItems = [...skins.wood, ...skins.gameon, ...skins.sticker, ...skins.lore, ...skins.farm, ...skins.toxic, ...skins.hydra, ...skins.warzone, ...skins.arabesque, ...skins.imperial, ...skins.snake, ...skins.goldnova];
         const item = allItems[Math.floor(Math.random() * allItems.length)];
         const drop = document.createElement('div');
         drop.className = 'drop-item';
@@ -1674,7 +1696,7 @@
 
     function addOgryMessage() {
         const ogryDiv = document.getElementById('ogryMessage');
-        const allItems = [...skins.wood, ...skins.gameon, ...skins.sticker, ...skins.lore, ...skins.farm, ...skins.toxic, ...skins.hydra, ...skins.warzone, ...skins.arabesque, ...skins.imperial, ...skins.snake];
+        const allItems = [...skins.wood, ...skins.gameon, ...skins.sticker, ...skins.lore, ...skins.farm, ...skins.toxic, ...skins.hydra, ...skins.warzone, ...skins.arabesque, ...skins.imperial, ...skins.snake, ...skins.goldnova];
         const item = allItems[Math.floor(Math.random() * allItems.length)];
         const users = ['xKratos', 'Mystic', 'Hunter', 'Fury', 'Shadow', 'Raven', 'Viper', 'Ghost', 'Cyclon', 'Striker'];
         const user = users[Math.floor(Math.random() * users.length)];
@@ -1692,7 +1714,8 @@
         { id: 'warzone', name: 'WARZONE', price: 150.00, img: 'https://cdn.casehug.com/cases/WARZONE.png', loot: skins.warzone },
         { id: 'arabesque', name: 'ARABESQUE', price: 300.00, img: 'https://cdn.casehug.com/cases/ARABESQUE.png', loot: skins.arabesque },
         { id: 'imperial', name: 'IMPERIAL', price: 25.00, img: 'https://cdn.casehug.com/content/case/stickerCapsules/IMPERIAL_1756306033.png', loot: skins.imperial },
-        { id: 'snake', name: 'SNAKE', price: 350.00, img: 'https://cdn.casehug.com/cases/SNAKE.png', loot: skins.snake }
+        { id: 'snake', name: 'SNAKE', price: 350.00, img: 'https://cdn.casehug.com/cases/SNAKE.png', loot: skins.snake },
+        { id: 'goldnova', name: 'GOLD NOVA', price: 120.00, img: 'https://cdn.casehug.com/cases/GOLD_NOVA.png', loot: skins.goldnova }
     ];
 
     let battleConfig = { mode: 'NORMAL', players: 2, counts: {} };
