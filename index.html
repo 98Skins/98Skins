@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>98SKINS | REAL DROP + BITWY</title>
+    <title>98SKINS | REAL DROP + BITWY + NAGRODY</title>
     <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -160,6 +160,120 @@
             z-index: 5;
         }
         .hidden { display: none !important; }
+
+        /* STYL DLA NAGRÓD CZASOWYCH */
+        .rewards-panel {
+            background: rgba(26, 31, 42, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid #00ff88;
+            box-shadow: 0 0 30px rgba(0,255,136,0.2);
+        }
+        
+        .rewards-title {
+            font-size: 1.5rem;
+            color: #00ff88;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+            text-shadow: 0 0 15px rgba(0,255,136,0.5);
+        }
+        
+        .timer-display {
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: #ffaa00;
+            text-shadow: 0 0 20px #ffaa00;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .rewards-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+        }
+        
+        .reward-item {
+            background: rgba(21, 25, 33, 0.9);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            border: 2px solid transparent;
+            transition: 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .reward-item.claimed {
+            opacity: 0.5;
+            filter: grayscale(0.8);
+            border-color: #888;
+        }
+        
+        .reward-item.claimed::after {
+            content: "✓ ODEBRANO";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-15deg);
+            font-size: 1.2rem;
+            font-weight: 900;
+            color: #00ff88;
+            text-shadow: 0 0 20px #00ff88;
+            background: rgba(0,0,0,0.7);
+            padding: 10px 20px;
+            border-radius: 30px;
+            border: 2px solid #00ff88;
+            white-space: nowrap;
+        }
+        
+        .reward-item.available {
+            border-color: #00ff88;
+            box-shadow: 0 0 30px rgba(0,255,136,0.3);
+            cursor: pointer;
+        }
+        
+        .reward-item.available:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 50px rgba(0,255,136,0.6);
+        }
+        
+        .reward-item.locked {
+            opacity: 0.5;
+            filter: grayscale(0.8);
+        }
+        
+        .reward-time {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #ffaa00;
+            margin-bottom: 10px;
+        }
+        
+        .reward-icon {
+            width: 80px;
+            height: 80px;
+            margin: 10px auto;
+        }
+        
+        .reward-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        .reward-name {
+            font-weight: 700;
+            margin: 10px 0 5px;
+        }
+        
+        .reward-price {
+            color: #00ff88;
+            font-weight: 700;
+        }
 
         .cases-grid { display: flex; gap: 25px; justify-content: center; flex-wrap: wrap; }
         .case-card { 
@@ -762,6 +876,13 @@
 <div id="casesView" class="container">
     <div class="ogry-info" id="ogryMessage"></div>
     
+    <!-- PANEL NAGRÓD CZASOWYCH -->
+    <div class="rewards-panel">
+        <div class="rewards-title">⏰ NAGRODY ZA CZAS</div>
+        <div class="timer-display" id="timeDisplay">00:00</div>
+        <div class="rewards-grid" id="rewardsGrid"></div>
+    </div>
+    
     <div class="cases-grid">
         <!-- WOOD DAILY -->
         <div class="case-card" id="dailyCase" onclick="tryOpenDaily()">
@@ -992,6 +1113,109 @@
         canvas.style.display = 'none';
     }
 
+    // ==================== SYSTEM NAGRÓD ZA CZAS ====================
+    let timeRewards = [
+        { 
+            time: 60, // 1 minuta w sekundach
+            name: "Desert Eagle | Heat Treated",
+            price: 25.00,
+            img: "https://cdn.casehug.com/730/33/33391818759e7127c4f61ad842a05ce1.png?width=640&quality=85",
+            color: "#ffaa00",
+            type: "skin"
+        },
+        { 
+            time: 600, // 10 minut
+            name: "AK-47 | Fire Serpent",
+            price: 1000.00,
+            img: "https://cdn.casehug.com/730/3d/3d6b4ac1c1dd329b8f735c63a2d72cb6.png?width=640&quality=85",
+            color: "#ff5500",
+            type: "skin"
+        },
+        { 
+            time: 1800, // 30 minut
+            name: "AWP | Dragon Lore (Factory New)",
+            price: 5000.00,
+            img: "https://cdn.casehug.com/730/af/afc9bcb65d41de58f6865b29faf1e396.png?width=640&quality=85",
+            color: "#ff0000",
+            type: "skin"
+        },
+        { 
+            time: 3600, // 60 minut
+            name: "★ StatTrak™ AWP | Dragon Lore",
+            price: 40000.00,
+            img: "https://cdn.casehug.com/730/af/afc9bcb65d41de58f6865b29faf1e396.png?width=640&quality=85",
+            color: "#ff00ff",
+            type: "skin"
+        }
+    ];
+
+    let timeElapsed = parseInt(localStorage.getItem('timeElapsed')) || 0;
+    let claimedRewards = JSON.parse(localStorage.getItem('claimedRewards')) || [false, false, false, false];
+    let timeInterval;
+    let startTime = Date.now() - (timeElapsed * 1000);
+
+    function updateTime() {
+        const now = Date.now();
+        timeElapsed = Math.floor((now - startTime) / 1000);
+        localStorage.setItem('timeElapsed', timeElapsed);
+        
+        const minutes = Math.floor(timeElapsed / 60);
+        const seconds = timeElapsed % 60;
+        document.getElementById('timeDisplay').innerText = 
+            `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        
+        renderRewards();
+    }
+
+    function renderRewards() {
+        const grid = document.getElementById('rewardsGrid');
+        grid.innerHTML = '';
+        
+        timeRewards.forEach((reward, index) => {
+            const isClaimed = claimedRewards[index];
+            const isAvailable = timeElapsed >= reward.time && !isClaimed;
+            const isLocked = !isClaimed && !isAvailable;
+            
+            const div = document.createElement('div');
+            div.className = `reward-item ${isClaimed ? 'claimed' : isAvailable ? 'available' : 'locked'}`;
+            
+            if (isAvailable) {
+                div.onclick = () => claimReward(index);
+            }
+            
+            div.innerHTML = `
+                <div class="reward-time">${Math.floor(reward.time / 60)} min</div>
+                <div class="reward-icon"><img src="${reward.img}" loading="lazy"></div>
+                <div class="reward-name">${reward.name}</div>
+                <div class="reward-price">${reward.price.toFixed(2)} zł</div>
+            `;
+            
+            grid.appendChild(div);
+        });
+    }
+
+    function claimReward(index) {
+        const reward = timeRewards[index];
+        inventory.push(reward);
+        claimedRewards[index] = true;
+        localStorage.setItem('claimedRewards', JSON.stringify(claimedRewards));
+        updateUI();
+        playSound(sfx.best);
+        
+        // Pokaż popup z nagrodą
+        document.getElementById('popupImg').src = reward.img;
+        document.getElementById('popupName').innerText = reward.name;
+        document.getElementById('popupPrice').innerText = reward.price.toFixed(2) + ' zł';
+        document.getElementById('demoInfo').classList.add('hidden');
+        document.getElementById('winPopup').classList.add('active');
+        
+        renderRewards();
+    }
+
+    // Uruchom licznik czasu
+    timeInterval = setInterval(updateTime, 1000);
+    updateTime();
+
     // ==================== GŁÓWNE SKRZYNKI ====================
     let balance = parseFloat(localStorage.getItem('balance')) || 50.00;
     let inventory = JSON.parse(localStorage.getItem('inventory')) || [];
@@ -1002,7 +1226,7 @@
     let lastDailyTime = localStorage.getItem('lastDailyTime') ? parseInt(localStorage.getItem('lastDailyTime')) : 0;
     let lossStreak = parseInt(localStorage.getItem('lossStreak')) || 0;
 
-    // DEFINICJE WSZYSTKICH SKRZYŃ - DODANA SNAKE!
+    // DEFINICJE WSZYSTKICH SKRZYŃ
     const skins = {
         wood: [
             { name: "PP-Bizon | Facility Sketch", price: 0.50, chance: 33.3, img: "https://cdn.casehug.com/730/ab/ab94c6ed7fd6b5b1162cf71c90ddba35.png?width=640&quality=85", color: "#4b69ff", type: "skin" },
@@ -1090,7 +1314,6 @@
             { name: "Sticker | Bosh", price: 20.40, chance: 20.0, img: "https://cdn.casehug.com/730/2a/2a887ddf5bcab3307a9e3cb2e22e5f15.png?width=640&quality=85", color: "#ffd700", type: "sticker" },
             { name: "Sticker | Showdown", price: 28.72, chance: 20.1, img: "https://cdn.casehug.com/730/39/3929b366e57d8c4e38258c96ba9b94b1.png?width=640&quality=85", color: "#ffd700", type: "sticker" }
         ],
-        // NOWA SKRZYNKA SNAKE - wymarzone noże!
         snake: [
             { name: "★ Butterfly Knife | Gamma Doppler", price: 13244.08, chance: 0.1, img: "https://cdn.casehug.com/730/09/09cc1b599aa8866cf506ff6ab8ffa147.png?width=640&quality=85", color: "#00ffaa", type: "knife" },
             { name: "★ Butterfly Knife | Doppler", price: 13204.76, chance: 0.2, img: "https://cdn.casehug.com/730/89/8902e6d09c36cf66df9716e0f8a8daec.png?width=640&quality=85", color: "#00ffaa", type: "knife" },
@@ -1156,7 +1379,7 @@
         updateUI();
     }
 
-    // NOWA FUNKCJA - SPRZEDAJ WSZYSTKO!
+    // FUNKCJA SPRZEDAJ WSZYSTKO
     function sellAllItems() {
         if (inventory.length === 0) {
             alert('Nie masz żadnych przedmiotów!');
